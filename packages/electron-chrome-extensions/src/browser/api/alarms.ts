@@ -21,11 +21,11 @@ export class AlarmsAPI {
 
   constructor(private ctx: ExtensionContext) {
     const handle = this.ctx.router.apiHandler()
-    handle('alarms.create', this.create)
-    handle('alarms.get', this.get)
-    handle('alarms.getAll', this.getAll)
-    handle('alarms.clear', this.clear)
-    handle('alarms.clearAll', this.clearAll)
+    handle('alarms.create', this.create, { permission: 'alarms' })
+    handle('alarms.get', this.get, { permission: 'alarms' })
+    handle('alarms.getAll', this.getAll, { permission: 'alarms' })
+    handle('alarms.clear', this.clear, { permission: 'alarms' })
+    handle('alarms.clearAll', this.clearAll, { permission: 'alarms' })
 
     // Clean up alarms when extension unloads
     const sessionExtensions = ctx.session.extensions || ctx.session

@@ -1,5 +1,6 @@
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
+import { requireHostPermission } from './permission-utils'
 
 enum CookieStoreID {
   Default = '0',
@@ -28,11 +29,13 @@ export class CookiesAPI {
 
   constructor(private ctx: ExtensionContext) {
     const handle = this.ctx.router.apiHandler()
-    handle('cookies.get', this.get.bind(this))
-    handle('cookies.getAll', this.getAll.bind(this))
-    handle('cookies.set', this.set.bind(this))
-    handle('cookies.remove', this.remove.bind(this))
-    handle('cookies.getAllCookieStores', this.getAllCookieStores.bind(this))
+    handle('cookies.get', this.get.bind(this), { permission: 'cookies' })
+    handle('cookies.getAll', this.getAll.bind(this), { permission: 'cookies' })
+    handle('cookies.set', this.set.bind(this), { permission: 'cookies' })
+    handle('cookies.remove', this.remove.bind(this), { permission: 'cookies' })
+    handle('cookies.getAllCookieStores', this.getAllCookieStores.bind(this), {
+      permission: 'cookies',
+    })
 
     this.cookies.addListener('changed', this.onChanged)
   }
@@ -41,6 +44,9 @@ export class CookiesAPI {
     event: ExtensionEvent,
     details: chrome.cookies.CookieDetails,
   ): Promise<chrome.cookies.Cookie | null> {
+    // Validate host permission for the URL
+    requireHostPermission(event.extension.manifest, details.url, 'cookies.get')
+
     // TODO: storeId
     const cookies = await this.cookies.get({
       url: details.url,
@@ -57,6 +63,11 @@ export class CookiesAPI {
     event: ExtensionEvent,
     details: chrome.cookies.GetAllDetails,
   ): Promise<chrome.cookies.Cookie[]> {
+    // Validate host permission for the URL if provided
+    if (details.url) {
+      requireHostPermission(event.extension.manifest, details.url, 'cookies.getAll')
+    }
+
     // TODO: storeId
     const cookies = await this.cookies.get({
       url: details.url,
@@ -74,6 +85,9 @@ export class CookiesAPI {
     event: ExtensionEvent,
     details: chrome.cookies.SetDetails,
   ): Promise<chrome.cookies.Cookie | null> {
+    // Validate host permission for the URL
+    requireHostPermission(event.extension.manifest, details.url, 'cookies.set')
+
     await this.cookies.set(details)
     const cookies = await this.cookies.get(details)
     return cookies.length > 0 ? createCookieDetails(cookies[0]) : null
@@ -83,6 +97,9 @@ export class CookiesAPI {
     event: ExtensionEvent,
     details: chrome.cookies.CookieDetails,
   ): Promise<chrome.cookies.CookieDetails | null> {
+    // Validate host permission for the URL
+    requireHostPermission(event.extension.manifest, details.url, 'cookies.remove')
+
     try {
       await this.cookies.remove(details.url, details.name)
     } catch {
