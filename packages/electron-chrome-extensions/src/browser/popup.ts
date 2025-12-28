@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { BrowserWindow, Session } from 'electron'
+import { BrowserWindow, screen, Session } from 'electron'
 import { getAllWindows } from './api/common'
 import debug from 'debug'
 
@@ -44,6 +44,7 @@ export class PopupView extends EventEmitter {
   private destroyed: boolean = false
   private hidden: boolean = true
   private alignment?: string
+  private focusLostTimeout?: NodeJS.Timeout
 
   /** Preferred size changes are only received in Electron v12+ */
   private usingPreferredSize = supportsPreferredSize()
@@ -88,6 +89,8 @@ export class PopupView extends EventEmitter {
     this.browserWindow.on('blur', this.maybeClose)
     this.browserWindow.on('closed', this.destroy)
     this.parent.once('closed', this.destroy)
+    this.parent.on('move', this.onParentMove)
+    this.parent.on('resize', this.onParentResize)
 
     this.readyPromise = this.load(opts.url)
   }
@@ -133,9 +136,17 @@ export class PopupView extends EventEmitter {
 
     d(`destroying ${this.extensionId}`)
 
+    // Clear any pending focus timeout
+    if (this.focusLostTimeout) {
+      clearTimeout(this.focusLostTimeout)
+      this.focusLostTimeout = undefined
+    }
+
     if (this.parent) {
       if (!this.parent.isDestroyed()) {
         this.parent.off('closed', this.destroy)
+        this.parent.off('move', this.onParentMove)
+        this.parent.off('resize', this.onParentResize)
       }
       this.parent = undefined
     }
@@ -190,6 +201,12 @@ export class PopupView extends EventEmitter {
   }
 
   private maybeClose = () => {
+    // Clear any pending close timeout
+    if (this.focusLostTimeout) {
+      clearTimeout(this.focusLostTimeout)
+      this.focusLostTimeout = undefined
+    }
+
     // Keep open if webContents is being inspected
     if (!this.browserWindow?.isDestroyed() && this.browserWindow?.webContents.isDevToolsOpened()) {
       d('preventing close due to DevTools being open')
@@ -204,7 +221,24 @@ export class PopupView extends EventEmitter {
       return
     }
 
-    this.destroy()
+    // Debounce the close to handle rapid focus changes (e.g., password managers)
+    this.focusLostTimeout = setTimeout(() => {
+      if (!this.destroyed && !this.browserWindow?.isFocused()) {
+        this.destroy()
+      }
+    }, 100)
+  }
+
+  private onParentMove = () => {
+    if (!this.destroyed && !this.hidden) {
+      this.updatePosition()
+    }
+  }
+
+  private onParentResize = () => {
+    if (!this.destroyed && !this.hidden) {
+      this.updatePosition()
+    }
   }
 
   private updatePosition() {
@@ -213,9 +247,13 @@ export class PopupView extends EventEmitter {
     const winBounds = this.parent.getBounds()
     const winContentBounds = this.parent.getContentBounds()
     const nativeTitlebarHeight = winBounds.height - winContentBounds.height
-
     const viewBounds = this.browserWindow.getBounds()
 
+    // Get the display containing the parent window for screen boundary detection
+    const display = screen.getDisplayMatching(winBounds)
+    const workArea = display.workArea
+
+    // Calculate initial position (bottom-left anchored by default)
     let x = winBounds.x + this.anchorRect.x + this.anchorRect.width - viewBounds.width
     let y =
       winBounds.y +
@@ -224,15 +262,43 @@ export class PopupView extends EventEmitter {
       this.anchorRect.height +
       PopupView.POSITION_PADDING
 
-    // If aligned to a differently then we need to offset the popup position
-    if (this.alignment?.includes('right')) x = winBounds.x + this.anchorRect.x
-    if (this.alignment?.includes('top'))
+    // Apply alignment adjustments
+    if (this.alignment?.includes('right')) {
+      x = winBounds.x + this.anchorRect.x
+    }
+    if (this.alignment?.includes('top')) {
       y =
         winBounds.y +
         nativeTitlebarHeight -
         viewBounds.height +
         this.anchorRect.y -
         PopupView.POSITION_PADDING
+    }
+
+    // Flip if going off-screen (right edge)
+    if (x + viewBounds.width > workArea.x + workArea.width) {
+      x = winBounds.x + this.anchorRect.x
+    }
+
+    // Clamp to left edge
+    if (x < workArea.x) {
+      x = workArea.x + PopupView.POSITION_PADDING
+    }
+
+    // Flip if going off-screen (bottom edge)
+    if (y + viewBounds.height > workArea.y + workArea.height) {
+      y =
+        winBounds.y +
+        nativeTitlebarHeight +
+        this.anchorRect.y -
+        viewBounds.height -
+        PopupView.POSITION_PADDING
+    }
+
+    // Clamp to top edge
+    if (y < workArea.y) {
+      y = workArea.y + PopupView.POSITION_PADDING
+    }
 
     // Convert to ints
     x = Math.floor(x)

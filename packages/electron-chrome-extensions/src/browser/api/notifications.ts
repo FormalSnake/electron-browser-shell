@@ -50,11 +50,13 @@ export class NotificationsAPI {
 
   constructor(private ctx: ExtensionContext) {
     const handle = this.ctx.router.apiHandler()
-    handle('notifications.clear', this.clear)
-    handle('notifications.create', this.create)
-    handle('notifications.getAll', this.getAll)
-    handle('notifications.getPermissionLevel', this.getPermissionLevel)
-    handle('notifications.update', this.update)
+    handle('notifications.clear', this.clear, { permission: 'notifications' })
+    handle('notifications.create', this.create, { permission: 'notifications' })
+    handle('notifications.getAll', this.getAll, { permission: 'notifications' })
+    handle('notifications.getPermissionLevel', this.getPermissionLevel, {
+      permission: 'notifications',
+    })
+    handle('notifications.update', this.update, { permission: 'notifications' })
 
     const sessionExtensions = ctx.session.extensions || ctx.session
     sessionExtensions.on('extension-unloaded', (event, extension) => {

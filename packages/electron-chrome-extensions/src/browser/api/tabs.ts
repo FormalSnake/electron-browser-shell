@@ -1,6 +1,7 @@
 import { ExtensionContext } from '../context'
 import { ExtensionEvent } from '../router'
 import { getAllWindows, matchesPattern, matchesTitlePattern, TabContents } from './common'
+import { hasHostPermission } from './permission-utils'
 import { WindowsAPI } from './windows'
 import debug from 'debug'
 
@@ -140,10 +141,36 @@ export class TabsAPI {
     return details
   }
 
+  /**
+   * Filters sensitive tab data based on extension permissions.
+   * Without 'tabs' permission AND matching host permission, url/title are hidden.
+   */
+  private filterSensitiveTabData<T extends Partial<chrome.tabs.Tab>>(
+    tab: T,
+    manifest: chrome.runtime.Manifest,
+  ): T {
+    const hasTabsPermission = manifest.permissions?.includes('tabs')
+
+    if (!hasTabsPermission) {
+      const hasUrlAccess = tab.url ? hasHostPermission(manifest, tab.url) : false
+      if (!hasUrlAccess) {
+        return {
+          ...tab,
+          url: undefined,
+          title: undefined,
+          favIconUrl: undefined,
+          pendingUrl: undefined,
+        } as T
+      }
+    }
+    return tab
+  }
+
   private get(event: ExtensionEvent, tabId: number) {
     const tab = this.ctx.store.getTabById(tabId)
     if (!tab) return { id: TabsAPI.TAB_ID_NONE }
-    return this.getTabDetails(tab)
+    const details = this.getTabDetails(tab)
+    return details ? this.filterSensitiveTabData(details, event.extension.manifest) : details
   }
 
   private getAllInWindow(event: ExtensionEvent, windowId: number = TabsAPI.WINDOW_ID_CURRENT) {
@@ -236,6 +263,8 @@ export class TabsAPI {
         }
         return tab
       })
+      .map((tab) => (tab ? this.filterSensitiveTabData(tab, event.extension.manifest) : tab))
+
     return filteredTabs
   }
 

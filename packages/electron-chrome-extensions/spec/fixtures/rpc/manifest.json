@@ -19,6 +19,7 @@
   "permissions": [
     "contextMenus",
     "nativeMessaging",
+    "notifications",
     "webRequest",
     "webRequestBlocking",
     "<all_urls>"

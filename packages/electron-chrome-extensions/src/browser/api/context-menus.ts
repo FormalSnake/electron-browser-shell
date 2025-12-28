@@ -85,9 +85,9 @@ export class ContextMenusAPI {
 
   constructor(private ctx: ExtensionContext) {
     const handle = this.ctx.router.apiHandler()
-    handle('contextMenus.create', this.create)
-    handle('contextMenus.remove', this.remove)
-    handle('contextMenus.removeAll', this.removeAll)
+    handle('contextMenus.create', this.create, { permission: 'contextMenus' })
+    handle('contextMenus.remove', this.remove, { permission: 'contextMenus' })
+    handle('contextMenus.removeAll', this.removeAll, { permission: 'contextMenus' })
 
     const sessionExtensions = ctx.session.extensions || ctx.session
     sessionExtensions.on('extension-unloaded', (event, extension) => {

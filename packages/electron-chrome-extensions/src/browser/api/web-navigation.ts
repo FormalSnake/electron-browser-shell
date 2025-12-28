@@ -45,8 +45,10 @@ const getFrameDetails = (
 export class WebNavigationAPI {
   constructor(private ctx: ExtensionContext) {
     const handle = this.ctx.router.apiHandler()
-    handle('webNavigation.getFrame', this.getFrame.bind(this))
-    handle('webNavigation.getAllFrames', this.getAllFrames.bind(this))
+    handle('webNavigation.getFrame', this.getFrame.bind(this), { permission: 'webNavigation' })
+    handle('webNavigation.getAllFrames', this.getAllFrames.bind(this), {
+      permission: 'webNavigation',
+    })
 
     this.ctx.store.on('tab-added', this.observeTab.bind(this))
   }
