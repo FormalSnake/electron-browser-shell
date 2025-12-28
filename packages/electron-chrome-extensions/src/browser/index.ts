@@ -4,6 +4,7 @@ import path from 'node:path'
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 
+import { AlarmsAPI } from './api/alarms'
 import { BrowserActionAPI } from './api/browser-action'
 import { TabsAPI } from './api/tabs'
 import { WindowsAPI } from './api/windows'
@@ -20,6 +21,7 @@ import { ExtensionRouter } from './router'
 import { checkLicense, License } from './license'
 import { readLoadedExtensionManifest } from './manifest'
 import { PermissionsAPI } from './api/permissions'
+import { ScriptingAPI } from './api/scripting'
 import { resolvePartition } from './partition'
 
 function checkVersion() {
@@ -121,6 +123,7 @@ export class ElectronChromeExtensions extends EventEmitter {
   private ctx: ExtensionContext
 
   private api: {
+    alarms: AlarmsAPI
     browserAction: BrowserActionAPI
     contextMenus: ContextMenusAPI
     commands: CommandsAPI
@@ -128,6 +131,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     notifications: NotificationsAPI
     permissions: PermissionsAPI
     runtime: RuntimeAPI
+    scripting: ScriptingAPI
     tabs: TabsAPI
     webNavigation: WebNavigationAPI
     windows: WindowsAPI
@@ -158,6 +162,7 @@ export class ElectronChromeExtensions extends EventEmitter {
     }
 
     this.api = {
+      alarms: new AlarmsAPI(this.ctx),
       browserAction: new BrowserActionAPI(this.ctx),
       contextMenus: new ContextMenusAPI(this.ctx),
       commands: new CommandsAPI(this.ctx),
@@ -165,6 +170,7 @@ export class ElectronChromeExtensions extends EventEmitter {
       notifications: new NotificationsAPI(this.ctx),
       permissions: new PermissionsAPI(this.ctx),
       runtime: new RuntimeAPI(this.ctx),
+      scripting: new ScriptingAPI(this.ctx),
       tabs: new TabsAPI(this.ctx),
       webNavigation: new WebNavigationAPI(this.ctx),
       windows: new WindowsAPI(this.ctx),

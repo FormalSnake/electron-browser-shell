@@ -312,6 +312,18 @@ export const injectExtensionAPIs = () => {
         factory: browserActionFactory,
       },
 
+      alarms: {
+        factory: (base) => ({
+          ...base,
+          create: invokeExtension('alarms.create'),
+          get: invokeExtension('alarms.get'),
+          getAll: invokeExtension('alarms.getAll'),
+          clear: invokeExtension('alarms.clear'),
+          clearAll: invokeExtension('alarms.clearAll'),
+          onAlarm: new ExtensionEvent('alarms.onAlarm'),
+        }),
+      },
+
       commands: {
         factory: (base) => {
           return {
@@ -518,6 +530,20 @@ export const injectExtensionAPIs = () => {
             sendNativeMessage: invokeExtension('runtime.sendNativeMessage'),
           }
         },
+      },
+
+      scripting: {
+        shouldInject: () => manifest.manifest_version === 3,
+        factory: (base) => ({
+          ...base,
+          executeScript: invokeExtension('scripting.executeScript'),
+          insertCSS: invokeExtension('scripting.insertCSS'),
+          removeCSS: invokeExtension('scripting.removeCSS'),
+          registerContentScripts: invokeExtension('scripting.registerContentScripts'),
+          unregisterContentScripts: invokeExtension('scripting.unregisterContentScripts'),
+          getRegisteredContentScripts: invokeExtension('scripting.getRegisteredContentScripts'),
+          updateContentScripts: invokeExtension('scripting.updateContentScripts'),
+        }),
       },
 
       storage: {
