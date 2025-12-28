@@ -350,6 +350,15 @@ The following APIs are supported, in addition to [those already built-in to Elec
 - [x] chrome.action.openPopup
 - [x] chrome.action.onClicked
 
+### [`chrome.alarms`](https://developer.chrome.com/extensions/alarms)
+
+- [x] chrome.alarms.create
+- [x] chrome.alarms.get
+- [x] chrome.alarms.getAll
+- [x] chrome.alarms.clear
+- [x] chrome.alarms.clearAll
+- [x] chrome.alarms.onAlarm
+
 ### [`chrome.commands`](https://developer.chrome.com/extensions/commands)
 
 - [ ] chrome.commands.getAll
@@ -401,6 +410,16 @@ See [Electron's Notification tutorial](https://www.electronjs.org/docs/tutorial/
 - [x] chrome.runtime.onSuspendCanceled
 - [x] chrome.runtime.openOptionsPage
 - [x] chrome.runtime.sendMessage
+
+### [`chrome.scripting`](https://developer.chrome.com/extensions/scripting) (MV3)
+
+- [x] chrome.scripting.executeScript
+- [x] chrome.scripting.insertCSS
+- [x] chrome.scripting.removeCSS
+- [x] chrome.scripting.registerContentScripts
+- [x] chrome.scripting.unregisterContentScripts
+- [x] chrome.scripting.getRegisteredContentScripts
+- [x] chrome.scripting.updateContentScripts
 
 ### [`chrome.storage`](https://developer.chrome.com/extensions/storage)
 
