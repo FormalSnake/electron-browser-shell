@@ -60,9 +60,9 @@ export class PopupView extends EventEmitter {
 
     this.browserWindow = new BrowserWindow({
       show: false,
-      frame: false,
+      frame: true,
       parent: opts.parent,
-      movable: false,
+      movable: true,
       maximizable: false,
       minimizable: false,
       // https://github.com/electron/electron/issues/47579
@@ -70,7 +70,7 @@ export class PopupView extends EventEmitter {
       resizable: false,
       skipTaskbar: true,
       backgroundColor: '#ffffff',
-      roundedCorners: false,
+      roundedCorners: true,
       webPreferences: {
         session: opts.session,
         sandbox: true,

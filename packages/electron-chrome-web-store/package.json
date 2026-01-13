@@ -26,7 +26,7 @@
     "webstore",
     "extensions"
   ],
-  "repository": "https://github.com/samuelmaddock/electron-browser-shell",
+  "repository": "https://github.com/FormalSnake/electron-browser-shell",
   "author": "Samuel Maddock <sam@samuelmaddock.com>",
   "license": "MIT",
   "devDependencies": {

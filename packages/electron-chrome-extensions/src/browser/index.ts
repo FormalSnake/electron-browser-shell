@@ -240,6 +240,21 @@ export class ElectronChromeExtensions extends EventEmitter {
     }
   }
 
+  /** Notify extension system that a window has been updated. */
+  windowUpdated(windowId: number) {
+    this.api.windows.onBoundsChanged(windowId)
+  }
+
+  /** Notify extension system that a tab has been updated. */
+  tabUpdated(tabId: number) {
+    this.api.tabs.onUpdated(tabId)
+  }
+
+  /** Handle a CRX protocol request. */
+  handleCrxRequest(request: GlobalRequest): GlobalResponse {
+    return this.api.browserAction.handleCRXRequest(request)
+  }
+
   /**
    * Add webContents to be tracked as an extension host which will receive
    * extension events when a chrome-extension:// resource is loaded.

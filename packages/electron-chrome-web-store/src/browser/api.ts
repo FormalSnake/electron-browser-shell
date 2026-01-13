@@ -50,6 +50,14 @@ function getExtensionInstallStatus(
   extensionId: ExtensionId,
   manifest?: chrome.runtime.Manifest,
 ) {
+  // Allow custom override of install status
+  if (state.overrideExtensionInstallStatus) {
+    const customStatus = state.overrideExtensionInstallStatus(state, extensionId, manifest)
+    if (customStatus !== undefined) {
+      return customStatus
+    }
+  }
+
   if (manifest && manifest.manifest_version < state.minimumManifestVersion) {
     return ExtensionInstallStatus.DEPRECATED_MANIFEST_VERSION
   }
@@ -229,6 +237,15 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
             console.error(error)
           }
         }
+
+        // Call afterInstall callback if provided
+        if (webStoreState.afterInstall && ext) {
+          try {
+            webStoreState.afterInstall({ id: details.id, manifest: ext.manifest })
+          } catch (error) {
+            console.error('afterInstall callback error:', error)
+          }
+        }
       })
     }
 
@@ -322,7 +339,16 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
   })
 
   handle('chrome.management.setEnabled', async (event, id, enabled) => {
-    // TODO: Implement enabling/disabling extension
+    // Use custom handler if provided
+    if (webStoreState.customSetExtensionEnabled) {
+      try {
+        return await webStoreState.customSetExtensionEnabled(webStoreState, id, enabled)
+      } catch (error) {
+        console.error('customSetExtensionEnabled error:', error)
+        return false
+      }
+    }
+    // TODO: Implement default enabling/disabling extension
     return true
   })
 
@@ -333,10 +359,24 @@ export function registerWebStoreApi(webStoreState: WebStoreState) {
         // TODO: confirmation dialog
       }
 
+      // Get extension info before uninstalling for afterUninstall callback
+      const sessionExtensions = webStoreState.session.extensions || webStoreState.session
+      const extension = sessionExtensions.getExtension(id) || undefined
+      const manifest: chrome.runtime.Manifest | undefined = extension?.manifest
+
       try {
         await uninstallExtension(id, webStoreState)
         queueMicrotask(() => {
           event.sender.send('chrome.management.onUninstalled', id)
+
+          // Call afterUninstall callback if provided
+          if (webStoreState.afterUninstall) {
+            try {
+              webStoreState.afterUninstall({ id, extension, manifest })
+            } catch (error) {
+              console.error('afterUninstall callback error:', error)
+            }
+          }
         })
         return Result.SUCCESS
       } catch (error) {
